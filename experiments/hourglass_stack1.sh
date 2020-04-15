@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# DATA
-CHECKPOINT_DIR="~/workspace/deep-pose-private/data/checkpoints"
-LAST_CKPT="~/workspace/deep-pose-private/data/checkpoints/20200413-000435_2.5e-06_b12_pos0.5_lr300_baseline/e_32"
-TRAIN_DATA_DIR="~/datasets/coco2017/train2017"
-VAL_DATA_DIR="~/datasets/coco2017/val2017"
-TRAIN_ANNOTATIONS="~/datasets/coco2017/annotations/person_keypoints_train2017_single_person_all.json"
-VAL_ANNOTATIONS="~/datasets/coco2017/annotations/person_keypoints_val2017_single_person_all.json"
+# DATA - Replace with your own paths
+CHECKPOINT_DIR="../data/checkpoints"
+LAST_CKPT="../data/checkpoints/20200413-000435_2.5e-06_b12_pos0.5_lr300_baseline/e_32"
+TRAIN_DATA_DIR="/home/raktim/datasets/coco2017/train2017"
+VAL_DATA_DIR="/home/raktim/datasets/coco2017/val2017"
+TRAIN_ANNOTATIONS="/home/raktim/datasets/coco2017/annotations/person_keypoints_train2017_single_person_all.json"
+VAL_ANNOTATIONS="/home/raktim/datasets/coco2017/annotations/person_keypoints_val2017_single_person_all.json"
 
 #OTHERS
 BATCH=12

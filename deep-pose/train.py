@@ -1,5 +1,5 @@
 import os
-# os.environ['CUDA_VISIBLE_DEVICES'] = ''
+#os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
 import argparse
 import numpy as np
@@ -8,18 +8,14 @@ import tensorflow as tf
 gpus = tf.config.experimental.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(gpus[0], True)
 
-from dataset_tf import get_coco_dataset
-from net2 import HGNet, HourGlass
+from dataset import get_coco_dataset
+from models import HGNet, HourGlass
 from plt_utils import plot_results
 from loss import PixelMSE
 from datetime import datetime
 from tensorflow.keras.optimizers import Adam
 
-experiment_name = f"{datetime.now().strftime('%Y%m%d-%H%M%S')}_{str(LEARNING_RATE)}_b{str(BATCH_SIZE)}_pos{str(POS_VAL)}_lr{REDUCE_EVERY}"
 
-tb_log = tf.summary.create_file_writer(
-    f"~/workspace/human-pose-estimation/runs/{experiment_name}")
-tb_log.set_as_default()
 
 
 def get_dataset(args, mode):
@@ -278,6 +274,11 @@ def parse_arguments():
 if __name__ == "__main__":
     args = parse_arguments()
     kwargs = {}
+    experiment_name = f"{datetime.now().strftime('%Y%m%d-%H%M%S')}_{str(args.learning_rate)}_b{str(args.batch_size)}"
+
+    tb_log = tf.summary.create_file_writer(
+        f"~/workspace/human-pose-estimation/runs/{experiment_name}")
+    tb_log.set_as_default()
 
     ckpt_dir = os.path.join(args.ckpt_dir, experiment_name)
 
