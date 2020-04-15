@@ -1,0 +1,9 @@
+.idea/
+runs/
+checkpoints/
+notebooks/
+model.png
+data/
+*.zip
+*.pyc
+inferencer.py
