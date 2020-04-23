@@ -27,14 +27,12 @@ class ResidualBlock(tf.keras.layers.Layer):
                             strides=1,
                             name="res_cv3",
                             kernel_initializer='random_uniform')
-        self.bn3 = BatchNormalization()
-        self.relu3 = ReLU()
 
     def call(self, inputs):
         original_inp = inputs
         x = self.relu1(self.bn1(self.conv1(inputs)))
         x = self.relu2(self.bn2(self.conv2(x)))
-        x = self.relu3(self.bn3(self.conv3(x)))
+        x = self.conv3(x)
         return tf.add(original_inp, x)
 
 
