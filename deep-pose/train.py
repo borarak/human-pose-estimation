@@ -9,13 +9,11 @@ gpus = tf.config.experimental.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(gpus[0], True)
 
 from dataset import get_coco_dataset
-from models import HGNet, HourGlass
+from models import *
 from plt_utils import plot_results
 from loss import PixelMSE
 from datetime import datetime
 from tensorflow.keras.optimizers import Adam
-
-
 
 
 def get_dataset(args, mode):
@@ -30,9 +28,9 @@ def get_dataset(args, mode):
     dataset = dataset.map(lambda x, y: (tf.image.resize(
         x, (args.image_size, args.image_size)), y))
     dataset = dataset.map(lambda x, y:
-                          (tf.image.random_brightness(x, max_delta=0.1), y))
+                          (tf.image.random_brightness(x, max_delta=0.25), y))
     dataset = dataset.map(
-        lambda x, y: (tf.image.random_contrast(x, lower=0.9, upper=1.1), y))
+        lambda x, y: (tf.image.random_contrast(x, lower=0.8, upper=1.2), y))
 
     dataset = dataset.map(lambda x, y: random_flip(x, y))
     dataset = dataset.shuffle(100, reshuffle_each_iteration=True)
@@ -52,7 +50,7 @@ def random_flip(x, y):
 def train(train_ds, val_ds, args, **kwargs):
     print("Starting training...")
 
-    model = HGNet(stacks=1).model
+    model = get_model(args.model_name)(stacks=args.stacks).model
     print(model.summary())
     tf.keras.utils.plot_model(model,
                               './model.png',
@@ -62,7 +60,7 @@ def train(train_ds, val_ds, args, **kwargs):
     if args.warm_start:
         print("loading from checkpoint...")
         model.load_weights(args.last_ckpt)
-        start_epoch = int(str(args.last_ckpt).split("/")[-1][2:]) + 1
+        start_epoch = int(str(args.last_ckpt).split("/")[-1].split("_")[1]) + 1
         print("start epoch: ", start_epoch)
     else:
         start_epoch = 0
@@ -89,6 +87,8 @@ def train(train_ds, val_ds, args, **kwargs):
                 # Multiple losses for stacking
                 for res_idx, op in enumerate(res):
                     iter_loss = criteria(keypoints, op)
+                    if idx % 10 == 0:
+                        tf.summary.scalar(f'loss/train_inter{str(res_idx)}', iter_loss, step=global_step)
                     iter_losses.append(iter_loss)
 
                 total_loss = tf.reduce_sum(iter_losses)
@@ -97,6 +97,16 @@ def train(train_ds, val_ds, args, **kwargs):
                                           model.trainable_variables)
                 optim.apply_gradients(zip(gradients,
                                           model.trainable_variables))
+
+                if not args.warm_start and epoch == 0:
+                    if idx == 0:
+                        tf.keras.backend.set_value(optim.lr, 2.5e-6)
+                    if idx != 0 and idx % 100 == 0:
+                        curr_lr = tf.keras.backend.get_value(optim.lr)
+                        if curr_lr < 2.5e-4:
+                            new_lr = curr_lr * 2 if curr_lr * 2 < 2.5e-4 else 2.5e-4
+                            tf.keras.backend.set_value(optim.lr, new_lr)
+                            print(f"Changed current learning rate to: {tf.keras.backend.get_value(optim.lr)}")
 
                 if args.cycle_lr and idx % 700 == 0:
                     if not 'lr_idx' in kwargs.keys():
@@ -130,6 +140,7 @@ def train(train_ds, val_ds, args, **kwargs):
                     tf.summary.image('train_images/train_results',
                                      plot_results(images, res[-1]),
                                      step=global_step)
+
                     tf.summary.scalar('loss/train_loss',
                                       loss_avg.result(),
                                       step=global_step)
@@ -183,12 +194,14 @@ def train(train_ds, val_ds, args, **kwargs):
                                  & (val_res[-1] <= 1.0)).shape[0],
                         step=global_step)
 
-                    # # For testing
-                    # if idx == 20:
-                    #     exit(1)
+            # # For testing
+            # if idx == 20:
+            #     exit(1)
 
-        model.save_weights(os.path.join(kwargs['ckpt_dir'], f'e_{str(epoch)}'),
-                           save_format='tf')
+            if idx % 200 == 0 and idx != 0:
+                model.save_weights(os.path.join(kwargs['ckpt_dir'],
+                                                f'e_{str(epoch)}_i{str(idx)}_g{global_step}'),
+                                   save_format='tf')
 
 
 def parse_arguments():
@@ -222,8 +235,15 @@ def parse_arguments():
     parser.add_argument(
         '--cycle_lr',
         dest='cycle_lr',
-        default=False,
+        default=0,
+        type=int,
         help="Increases a smaller LR progressively to target LR")
+    parser.add_argument('--model_name',
+                        dest='model_name',
+                        default='HGNet',
+                        type=str,
+                        help="Name of model")
+    parser.add_argument('--stacks', dest='stacks', type=int, default=1, help="Number of HG stacks")
     parser.add_argument('--lrl',
                         dest='lr_low',
                         type=float,
@@ -267,6 +287,10 @@ def parse_arguments():
                         dest='last_ckpt',
                         type=str,
                         help="Checkpoint to start warm start from")
+    parser.add_argument('--tb_dir',
+                        dest='tb_dir',
+                        type=str,
+                        help="tensorboard directory")
 
     return parser.parse_args()
 
@@ -274,11 +298,9 @@ def parse_arguments():
 if __name__ == "__main__":
     args = parse_arguments()
     kwargs = {}
-    experiment_name = f"{datetime.now().strftime('%Y%m%d-%H%M%S')}_{str(args.learning_rate)}_b{str(args.batch_size)}"
+    experiment_name = f"{datetime.now().strftime('%Y%m%d-%H%M%S')}_lr{str(args.learning_rate)}_b{str(args.batch_size)}_s{str(args.stacks)}"
 
-    tb_log = tf.summary.create_file_writer(
-        f"~/workspace/human-pose-estimation/runs/{experiment_name}")
-    tb_log.set_as_default()
+    tb_log = tf.summary.create_file_writer(os.path.join(args.tb_dir, experiment_name))
 
     ckpt_dir = os.path.join(args.ckpt_dir, experiment_name)
 
@@ -298,4 +320,5 @@ if __name__ == "__main__":
     train_ds = get_dataset(args, 'train')
     val_ds = get_dataset(args, 'val')
 
-    train(train_ds, val_ds, args, **kwargs)
+    with tb_log.as_default():
+        train(train_ds, val_ds, args, **kwargs)
