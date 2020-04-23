@@ -1,6 +1,6 @@
 ## Human-pose-estimation
 
-This repository contains my own experiments, research, reproductions of state-of-the-art human pose estimation. Please note this is a **WIP** and this repository will be continously updated.
+This repository contains my own experiments, research, reproductions of state-of-the-art human pose estimation. 
 
 
 ## TODO list
@@ -9,8 +9,8 @@ This repository contains my own experiments, research, reproductions of state-of
 - [x] Step/cyclic learning rates (experimental)
 - [ ] Gaussian smoothed labels
 - [x] More data augumentation
-- [x] Gated skip connections
-- [ ] Add data preparation steps
+- [x] [Gated skip connections](https://arxiv.org/abs/2002.11098)
+- [x] Add data preparation steps
 - [ ] Optimise for real-time inference speeds
 
 
@@ -18,7 +18,7 @@ This repository contains my own experiments, research, reproductions of state-of
 
 Currently, i have used the COCO person keypoints dataset to train. Since this is a multi-person dataset, there is a preparation step to extract single persons.
 
-@TODO: Add data preparation step for COCO
+To prepare the data, follow the [prepare_verify_dataset.ipynb](./notebooks/prepare_verify_dataset) notebook. This notebook crops out every person instance from the COCO dataset using the person bounding boxes and creates new annotations from them. Since our goal is to do single person pose estimation, it's important that each trainng image has one centered person. In some cases, it's not possible to have only person, in that case the algorithm is nudged to concentrate on the centered and focussed person. During inference times, a person object detector can be used first detect each person instance in the image and subsequently feed that detection to the pose model. There are ways to do dense human pose estimation ofcourse but that's not the focus of this repository.
 
 
 ## Train
