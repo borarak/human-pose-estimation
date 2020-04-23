@@ -8,8 +8,8 @@ This repository contains my own experiments, research, reproductions of state-of
 - [x] Vanilla hour-glass networks with stacking, trained from scratch (no transfer learning)
 - [x] Step/cyclic learning rates (experimental)
 - [ ] Gaussian smoothed labels
-- [ ] More data augumentation
-- [ ] Gated skip connections
+- [x] More data augumentation
+- [x] Gated skip connections
 - [ ] Add data preparation steps
 - [ ] Optimise for real-time inference speeds
 
@@ -27,18 +27,19 @@ An example experiment exists in [experiments/hourglass_stack1.sh](experiments/ho
 
 1. Replace the directory configurations inside the script. 
 
-2. To train call
+2. To train call one of the experiments as follows or create your own
 
 	`./experiments/hourglass_stack1.sh`
 
 
 ## Results
 
-Some initial result copied from tensorboard are shown here. These will be replaced with better samples when I have an updated model
 
-![sample1.png](data/samples/sample1.png) 
+![sample1.png](data/samples/sample1.jpg) 
 
-![sample2.png](data/samples/sample2.png)
+![sample2.png](data/samples/sample2.jpg)
+
+![sample3.png](data/samples/sample3.jpg)
 
 
 
